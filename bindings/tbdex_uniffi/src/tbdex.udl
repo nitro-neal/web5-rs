@@ -1,0 +1,550 @@
+namespace tbdex {
+  [Throws=TbdexError]
+  sequence<Offering> get_offerings(string pfi_did_uri);
+  [Throws=TbdexError]
+  sequence<Balance> get_balances(string pfi_did_uri, BearerDid bearer_did);
+  [Throws=TbdexError]
+  void create_exchange(Rfq rfq, string? reply_to);
+  [Throws=TbdexError]
+  void submit_order(Order order);
+  [Throws=TbdexError]
+  void submit_cancel(Cancel cancel);
+  [Throws=TbdexError]
+  ExchangeData get_exchange(string pfi_did_uri, BearerDid bearer_did, string exchange_id);
+  [Throws=TbdexError]
+  sequence<string> get_exchange_ids(string pfi_did_uri, BearerDid bearer_did, GetExchangeIdsQueryParamsData? query_params);
+};
+
+[Error]
+interface TbdexError {
+  Error(string variant, string msg);
+};
+
+enum ResourceKind {
+  "Offering",
+  "Balance"
+};
+
+dictionary ResourceMetadataData {
+  ResourceKind kind;
+  string from;
+  string id;
+  string protocol;
+  string created_at;
+  string? updated_at;
+};
+
+interface Offering {
+  [Name=create, Throws=TbdexError]
+  constructor(string from, string json_serialized_data, string? protocol);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  [Throws=TbdexError]
+  OfferingData get_data();
+  [Throws=TbdexError]
+  void verify();
+  [Throws=TbdexError]
+  void sign(BearerDid bearer_did);
+};
+
+dictionary OfferingData {
+  ResourceMetadataData metadata;
+  string json_serialized_data;
+  string signature;
+};
+
+dictionary BalanceData {
+  ResourceMetadataData metadata;
+  BalanceDataData data;
+  string signature;
+};
+
+dictionary BalanceDataData {
+  string currency_code;
+  string available;
+};
+
+interface Balance {
+  [Name=create, Throws=TbdexError]
+  constructor(string from, BalanceDataData data, string? protocol);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  [Throws=TbdexError]
+  BalanceData get_data();
+  [Throws=TbdexError]
+  void sign(BearerDid bearer_did);
+  [Throws=TbdexError]
+  void verify();
+};
+
+enum MessageKind {
+  "Rfq",
+  "Quote",
+  "Order",
+  "OrderInstructions",
+  "Cancel",
+  "OrderStatus",
+  "Close"
+};
+
+dictionary MessageMetadataData {
+  string from;
+  string to;
+  MessageKind kind;
+  string id;
+  string exchange_id;
+  string? external_id;
+  string protocol;
+  string created_at;
+};
+
+interface Rfq {
+  [Name=create, Throws=TbdexError]
+  constructor(string to, string from, string json_serialized_create_rfq_data, string? protocol, string? external_id);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  [Throws=TbdexError]
+  RfqData get_data();
+
+  [Throws=TbdexError]
+  void verify_offering_requirements(Offering offering);
+  [Throws=TbdexError]
+  void verify_all_private_data();
+  [Throws=TbdexError]
+  void verify_present_private_data();
+  [Throws=TbdexError]
+  void verify();
+  [Throws=TbdexError]
+  void sign(BearerDid bearer_did);
+};
+
+dictionary RfqData {
+  MessageMetadataData metadata;
+  string json_serialized_data;
+  string? json_serialized_private_data;
+  string signature;
+};
+
+interface Quote {
+  [Name=create, Throws=TbdexError]
+  constructor(string to, string from, string exchange_id, QuoteDataData data, string? protocol, string? external_id);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  [Throws=TbdexError]
+  QuoteData get_data();
+  [Throws=TbdexError]
+  void verify();
+  [Throws=TbdexError]
+  void sign(BearerDid bearer_did);
+};
+
+dictionary QuoteData {
+  MessageMetadataData metadata;
+  QuoteDataData data;
+  string signature;
+};
+
+dictionary QuoteDataData {
+  string expires_at;
+  string payout_units_per_payin_unit;
+  QuoteDetailsData payin;
+  QuoteDetailsData payout;
+};
+
+dictionary QuoteDetailsData {
+  string currency_code;
+  string subtotal;
+  string total;
+  string? fee;
+};
+
+interface Order {
+  [Name=create, Throws=TbdexError]
+  constructor(string to, string from, string exchange_id, string? protocol, string? external_id);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  [Throws=TbdexError]
+  OrderData get_data();
+  [Throws=TbdexError]
+  void verify();
+  [Throws=TbdexError]
+  void sign(BearerDid bearer_did);
+};
+
+dictionary OrderData {
+  MessageMetadataData metadata;
+  OrderDataData data;
+  string signature;
+};
+
+dictionary OrderDataData {
+
+};
+
+interface OrderInstructions {
+  [Name=create, Throws=TbdexError]
+  constructor(string to, string from, string exchange_id, OrderInstructionsDataData data, string? protocol, string? external_id);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  [Throws=TbdexError]
+  OrderInstructionsData get_data();
+  [Throws=TbdexError]
+  void verify();
+  [Throws=TbdexError]
+  void sign(BearerDid bearer_did);
+};
+
+dictionary OrderInstructionsData {
+  MessageMetadataData metadata;
+  OrderInstructionsDataData data;
+  string signature;
+};
+
+dictionary OrderInstructionsDataData {
+  PaymentInstructionData payin;
+  PaymentInstructionData payout;
+};
+
+dictionary PaymentInstructionData {
+  string? link;
+  string? instruction;
+};
+
+interface Cancel {
+  [Name=create, Throws=TbdexError]
+  constructor(string to, string from, string exchange_id, CancelDataData data, string? protocol, string? external_id);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  [Throws=TbdexError]
+  CancelData get_data();
+  [Throws=TbdexError]
+  void verify();
+  [Throws=TbdexError]
+  void sign(BearerDid bearer_did);
+};
+
+dictionary CancelData {
+  MessageMetadataData metadata;
+  CancelDataData data;
+  string signature;
+};
+
+dictionary CancelDataData {
+  string? reason;
+};
+
+interface OrderStatus {
+  [Name=create, Throws=TbdexError]
+  constructor(string to, string from, string exchange_id, OrderStatusDataData data, string? protocol, string? external_id);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  [Throws=TbdexError]
+  OrderStatusData get_data();
+  [Throws=TbdexError]
+  void verify();
+  [Throws=TbdexError]
+  void sign(BearerDid bearer_did);
+};
+
+dictionary OrderStatusData {
+  MessageMetadataData metadata;
+  OrderStatusDataData data;
+  string signature;
+};
+
+dictionary OrderStatusDataData {
+  OrderStatusStatus status;
+  string? details;
+};
+
+enum OrderStatusStatus {
+  "PayinPending",
+  "PayinInitiated",
+  "PayinSettled",
+  "PayinFailed",
+  "PayinExpired",
+  "PayoutPending",
+  "PayoutInitiated",
+  "PayoutSettled",
+  "PayoutFailed",
+  "RefundPending",
+  "RefundInitiated",
+  "RefundSettled",
+  "RefundFailed"
+};
+
+interface Close {
+  [Name=create, Throws=TbdexError]
+  constructor(string to, string from, string exchange_id, CloseDataData data, string? protocol, string? external_id);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  [Throws=TbdexError]
+  CloseData get_data();
+  [Throws=TbdexError]
+  void verify();
+  [Throws=TbdexError]
+  void sign(BearerDid bearer_did);
+};
+
+dictionary CloseData {
+  MessageMetadataData metadata;
+  CloseDataData data;
+  string signature;
+};
+
+dictionary CloseDataData {
+  string? reason;
+  boolean? success;
+};
+
+dictionary ExchangeData {
+  Rfq rfq;
+  Quote? quote;
+  Order? order;
+  OrderInstructions? order_instructions;
+  Cancel? cancel;
+  sequence<OrderStatus>? order_statuses;
+  Close? close;
+};
+
+
+
+
+dictionary ErrorResponseBodyData {
+  string message;
+  sequence<ErrorDetailData>? details;
+};
+
+dictionary ErrorDetailData {
+  string? id;
+  string? message;
+  string? path;
+};
+
+interface ErrorResponseBody {
+  constructor(string message, sequence<ErrorDetailData>? details);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  ErrorResponseBodyData get_data();
+};
+
+dictionary GetOfferingsResponseBodyData {
+  sequence<Offering> data;
+};
+
+interface GetOfferingsResponseBody {
+  constructor(sequence<Offering> offerings);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  GetOfferingsResponseBodyData get_data();
+};
+
+dictionary GetBalancesResponseBodyData {
+  sequence<Balance> data;
+};
+
+interface GetBalancesResponseBody {
+  constructor(sequence<Balance> balances);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  GetBalancesResponseBodyData get_data();
+};
+
+dictionary GetExchangeResponseBodyDataSerializedMessage {
+  MessageKind kind;
+  string json_serialized;
+};
+
+dictionary GetExchangeResponseBodyData {
+  sequence<GetExchangeResponseBodyDataSerializedMessage> data;
+};
+
+interface GetExchangeResponseBody {
+  constructor(GetExchangeResponseBodyData response_body_data);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  GetExchangeResponseBodyData get_data();
+};
+
+dictionary GetExchangesResponseBodyData {
+  sequence<string> data;
+};
+
+interface GetExchangesResponseBody {
+  constructor(sequence<string> data);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  GetExchangesResponseBodyData get_data();
+};
+
+dictionary CreateExchangeRequestBodyData {
+  Rfq message;
+  string? reply_to;
+};
+
+interface CreateExchangeRequestBody {
+  constructor(Rfq message, string? reply_to);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  CreateExchangeRequestBodyData get_data();
+};
+
+dictionary UpdateExchangeRequestBodyData {
+  MessageKind kind;
+  string json_serialized_message;
+};
+
+interface UpdateExchangeRequestBody {
+  constructor(MessageKind kind, string json_serialized_message);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  UpdateExchangeRequestBodyData get_data();
+};
+
+dictionary ReplyToRequestBodyData {
+  MessageKind kind;
+  string json_serialized_message;
+};
+
+interface ReplyToRequestBody {
+  constructor(MessageKind kind, string json_serialized_message);
+  [Name=from_json_string, Throws=TbdexError]
+  constructor([ByRef] string json);
+  [Throws=TbdexError]
+  string to_json_string();
+  ReplyToRequestBodyData get_data();
+};
+
+dictionary GetExchangeIdsQueryParamsData {
+  i64? pagination_offset;
+  i64? pagination_limit;
+};
+
+
+
+
+
+
+
+
+
+[Error]
+interface Web5Error {
+  Error(string variant, string msg);
+};
+
+dictionary JwkData {
+  string? alg;
+  string kty;
+  string crv;
+  string? d;
+  string x;
+  string? y;
+};
+
+dictionary DidData {
+  string uri;
+  string url;
+  string method;
+  string id;
+  record<string, string>? params;
+  string? path;
+  string? query;
+  string? fragment;
+};
+
+dictionary DocumentData {
+  string id;
+  sequence<string>? context;
+  sequence<string>? controller;
+  sequence<string>? also_known_as;
+  sequence<VerificationMethodData> verification_method;
+  sequence<string>? authentication;
+  sequence<string>? assertion_method;
+  sequence<string>? key_agreement;
+  sequence<string>? capability_invocation;
+  sequence<string>? capability_delegation;
+  sequence<ServiceData>? service;
+};
+
+dictionary VerificationMethodData {
+  string id;
+  string type;
+  string controller;
+  JwkData public_key_jwk;
+};
+
+dictionary ServiceData {
+  string id;
+  string type;
+  sequence<string> service_endpoint;
+};
+
+[Trait, WithForeign]
+interface Signer {
+  [Throws=Web5Error]
+  bytes sign(bytes payload);
+};
+
+[Trait, WithForeign]
+interface KeyManager {
+  [Throws=Web5Error]
+  JwkData import_private_jwk(JwkData private_jwk);
+  [Throws=Web5Error]
+  Signer get_signer(JwkData public_jwk);
+};
+
+interface BearerDid {
+  constructor(DidData did, DocumentData document, KeyManager key_manager);
+  [Throws=Web5Error]
+  Signer get_signer(string verification_method_id);
+};
+
+
+
+
+
+
+
+
+
+interface PresentationDefinition {
+  [Throws=Web5Error]
+  constructor(string json_serialized_presentation_definition);
+  [Throws=Web5Error]
+  string get_json_serialized_presentation_definition();
+  [Throws=Web5Error]
+  sequence<string> select_credentials([ByRef] sequence<string> vc_jwts);
+};
